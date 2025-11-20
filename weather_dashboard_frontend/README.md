@@ -23,10 +23,13 @@ Create a `.env` file in this directory by copying `.env.example`:
 cp .env.example .env
 ```
 Edit `.env` and set:
-- `REACT_APP_OPENWEATHER_API_KEY` — your OpenWeatherMap API key
+- `REACT_APP_OPENWEATHER_API_KEY` — your OpenWeatherMap API key (required)
 - `REACT_APP_WEATHER_API_BASE` — defaults to `https://api.openweathermap.org/data/2.5` if omitted
+- `REACT_APP_WEATHER_UNITS` — optional: one of `standard`, `metric`, or `imperial` (default: `metric`)
 
-Note: Variables must be prefixed with `REACT_APP_` to be exposed to the client by Create React App.
+Important:
+- Variables must be prefixed with `REACT_APP_` to be exposed to the client by Create React App.
+- After changing `.env`, you MUST restart `npm start` for changes to take effect.
 
 ### 3) Run the app
 ```
@@ -51,6 +54,19 @@ npm run build
 - `src/App.js` — main app logic and state
 - `src/index.css` — global styles and theme
 - `src/App.css` — theme variables and toggle styles
+
+## Troubleshooting
+
+- "API key missing. Please configure .env and restart the app."
+  - Ensure `.env` contains `REACT_APP_OPENWEATHER_API_KEY=...`
+  - Restart `npm start` after editing `.env` (CRA reads env at startup).
+- "Invalid API key."
+  - The key is present but incorrect. Verify on OpenWeatherMap.
+- "City not found."
+  - The city name is invalid/unknown. Try a different spelling.
+- Still failing?
+  - Check network tab for requests to `https://api.openweathermap.org/data/2.5/weather?...`
+  - Confirm `REACT_APP_WEATHER_UNITS` is one of `standard|metric|imperial`.
 
 ## Attributions
 Weather data by [OpenWeatherMap](https://openweathermap.org/).

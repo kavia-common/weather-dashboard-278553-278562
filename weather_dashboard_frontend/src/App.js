@@ -34,9 +34,13 @@ function App() {
       if (e?.code === "CITY_NOT_FOUND") {
         setError("City not found. Please try a different name.");
       } else if (e?.code === "MISSING_API_KEY") {
-        setError("API key missing. Please configure .env before running.");
+        setError("API key missing. Please configure .env and restart the app.");
+      } else if (e?.code === "INVALID_API_KEY") {
+        setError("Invalid API key. Please verify REACT_APP_OPENWEATHER_API_KEY and restart the app.");
       } else if (e?.code === "VALIDATION_ERROR") {
         setError(e.message || "Please enter a valid city name.");
+      } else if (e?.code === "NETWORK_ERROR") {
+        setError("Network error while fetching weather. Please check your connection.");
       } else {
         setError("Unable to fetch weather. Please try again.");
       }
