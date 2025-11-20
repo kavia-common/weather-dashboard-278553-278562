@@ -3,7 +3,7 @@ import "./App.css";
 import "./index.css";
 import SearchBar from "./components/SearchBar";
 import WeatherCard from "./components/WeatherCard";
-import { getWeatherByCity } from "./api/weatherService";
+import { getWeatherByCity, getWeatherRuntimeInfo } from "./api/weatherService";
 
 // PUBLIC_INTERFACE
 function App() {
@@ -17,6 +17,16 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Check config on mount
+  useEffect(() => {
+    const info = getWeatherRuntimeInfo();
+    if (!info.hasKey) {
+      setError(
+        "API key missing. Create .env with VITE_WEATHER_API_KEY=your_key and restart the dev server."
+      );
+    }
+  }, []);
 
   // PUBLIC_INTERFACE
   const toggleTheme = () => {
@@ -33,14 +43,16 @@ function App() {
     } catch (e) {
       if (e?.code === "CITY_NOT_FOUND") {
         setError("City not found. Please try a different name.");
-      } else if (e?.code === "MISSING_API_KEY") {
-        setError("API key missing. Please configure .env and restart the app.");
+      } else if (e?.code === "CONFIG_ERROR") {
+        setError("API key missing. Create .env with VITE_WEATHER_API_KEY and restart the app.");
       } else if (e?.code === "INVALID_API_KEY") {
-        setError("Invalid API key. Please verify REACT_APP_OPENWEATHER_API_KEY and restart the app.");
+        setError("Invalid API key. Please verify VITE_WEATHER_API_KEY and restart the app.");
       } else if (e?.code === "VALIDATION_ERROR") {
         setError(e.message || "Please enter a valid city name.");
       } else if (e?.code === "NETWORK_ERROR") {
         setError("Network error while fetching weather. Please check your connection.");
+      } else if (e?.code === "RATE_LIMITED") {
+        setError("Rate limit reached. Please wait and try again.");
       } else {
         setError("Unable to fetch weather. Please try again.");
       }

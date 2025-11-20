@@ -7,21 +7,25 @@
 //
 
 /**
- * Read runtime configuration from CRA env (available at build time).
+ * Read runtime configuration using Vite-style env (import.meta.env).
  * This function centralizes env lookups and defaults.
  */
+// PUBLIC_INTERFACE
 function getRuntimeConfig() {
+  // Access Vite-style env safely; in CRA builds this will be undefined at build time,
+  // but our code targets Vite-style usage as required by the task.
+  const env = (typeof import.meta !== "undefined" && import.meta && import.meta.env) ? import.meta.env : {};
   const base =
-    process.env.REACT_APP_WEATHER_API_BASE ||
-    process.env.REACT_APP_OPENWEATHER_API_BASE ||
+    env.VITE_WEATHER_API_BASE ||
+    env.VITE_OPENWEATHER_API_BASE ||
     "https://api.openweathermap.org/data/2.5";
 
   // Allowed: "standard", "metric", "imperial"
-  const unitsRaw = (process.env.REACT_APP_WEATHER_UNITS || "metric").trim().toLowerCase();
+  const unitsRaw = String(env.VITE_WEATHER_UNITS || "metric").trim().toLowerCase();
   const allowedUnits = new Set(["standard", "metric", "imperial"]);
   const units = allowedUnits.has(unitsRaw) ? unitsRaw : "metric";
 
-  const key = process.env.REACT_APP_OPENWEATHER_API_KEY;
+  const key = env.VITE_WEATHER_API_KEY;
 
   return { base, key, units };
 }
@@ -43,7 +47,7 @@ async function parseOwmError(resp) {
   const message = typeof body?.message === "string" ? body.message : "";
 
   if (resp.status === 401 || cod === 401) {
-    const err = new Error(message || "Invalid API key. Please verify REACT_APP_OPENWEATHER_API_KEY.");
+    const err = new Error(message || "Invalid API key. Please verify VITE_WEATHER_API_KEY.");
     err.code = "INVALID_API_KEY";
     err.status = 401;
     return err;
@@ -53,6 +57,13 @@ async function parseOwmError(resp) {
     const err = new Error(message || "City not found. Please try another search.");
     err.code = "CITY_NOT_FOUND";
     err.status = 404;
+    return err;
+  }
+
+  if (resp.status === 429 || cod === 429) {
+    const err = new Error(message || "Too many requests. Please try again shortly.");
+    err.code = "RATE_LIMITED";
+    err.status = 429;
     return err;
   }
 
@@ -73,12 +84,13 @@ export async function getWeatherByCity(cityRaw) {
    *  {
    *    city: string,
    *    country: string,
-   *    temperature: number, // unit depends on REACT_APP_WEATHER_UNITS
+   *    temperature: number, // unit depends on VITE_WEATHER_UNITS
    *    condition: string,
    *    humidity: number,
    *    windSpeed: number, // m/s or mph based on units
    *    icon: string, // icon code
-   *    description: string
+   *    description: string,
+   *    units: "standard" | "metric" | "imperial"
    *  }
    */
   const city = typeof cityRaw === "string" ? cityRaw.trim() : "";
@@ -88,14 +100,13 @@ export async function getWeatherByCity(cityRaw) {
     throw err;
   }
 
-  // Read from env (Create React App exposes REACT_APP_* at build time)
   const { base, key, units } = getRuntimeConfig();
 
   if (!key) {
     const err = new Error(
-      "Missing OpenWeatherMap API key. Please set REACT_APP_OPENWEATHER_API_KEY in your .env file and restart the dev server."
+      "Missing OpenWeatherMap API key. Please set VITE_WEATHER_API_KEY in your .env file and restart the dev server."
     );
-    err.code = "MISSING_API_KEY";
+    err.code = "CONFIG_ERROR";
     throw err;
   }
 
@@ -128,14 +139,15 @@ export async function getWeatherByCity(cityRaw) {
       humidity: data?.main?.humidity ?? null,
       windSpeed: data?.wind?.speed ?? null,
       icon: data?.weather?.[0]?.icon || "",
-      // Optionally surface units to the caller if needed in UI
+      // Surface units to the caller for correct UI labels
       units,
     };
     return normalized;
   } catch (e) {
-    // Network or parsing error
+    // Network or parsing error or structured error from parseOwmError
     const err = new Error(e?.message || "Network error while fetching weather.");
-    err.code = e?.code || "NETWORK_ERROR";
+    // Map known errors to their codes, default to NETWORK_ERROR for fetch failures
+    err.code = e?.code || (e?.name === "TypeError" ? "NETWORK_ERROR" : "UNKNOWN_ERROR");
     err.status = e?.status;
     throw err;
   }

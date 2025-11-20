@@ -6,18 +6,21 @@ import React from "react";
  *
  * Props:
  *  - data: {
- *      city, country, temperature, condition, humidity, windSpeed, icon, description
+ *      city, country, temperature, condition, humidity, windSpeed, icon, description, units
  *    }
  */
 // PUBLIC_INTERFACE
 export default function WeatherCard({ data }) {
   if (!data) return null;
 
-  const { city, country, temperature, condition, humidity, windSpeed, icon, description } = data;
+  const { city, country, temperature, condition, humidity, windSpeed, icon, description, units } = data;
 
   const iconUrl = icon
     ? `https://openweathermap.org/img/wn/${icon}@2x.png`
     : "";
+
+  const tempUnit = units === "imperial" ? "°F" : units === "standard" ? "K" : "°C";
+  const windUnit = units === "imperial" ? "mph" : "m/s";
 
   return (
     <section className="weather-card" aria-label="Current weather">
@@ -38,7 +41,7 @@ export default function WeatherCard({ data }) {
       </div>
       <div className="weather-main">
         <div className="temp">
-          {typeof temperature === "number" ? `${temperature}°C` : "—"}
+          {typeof temperature === "number" ? `${temperature}${tempUnit}` : "—"}
         </div>
         <div className="condition">{condition || "—"}</div>
         {description ? <div className="description">{description}</div> : null}
@@ -53,7 +56,7 @@ export default function WeatherCard({ data }) {
         <div className="stat">
           <span className="label">Wind</span>
           <span className="value">
-            {typeof windSpeed === "number" ? `${windSpeed} m/s` : "—"}
+            {typeof windSpeed === "number" ? `${windSpeed} ${windUnit}` : "—"}
           </span>
         </div>
       </div>
